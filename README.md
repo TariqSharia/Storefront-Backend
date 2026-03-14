@@ -25,7 +25,7 @@ POSTGRES_DB=storefront_dev
 POSTGRES_TEST_DB=storefront_test
 POSTGRES_USER=postgres
 POSTGRES_PASSWORD=password123
-ENV=dev
+ENV=test
 BCRYPT_PASSWORD=my-storefront-pepper
 BCRYPT_SALT_ROUNDS=10
 JWT_SECRET=my-storefront-jwt-secret
@@ -50,7 +50,6 @@ yarn migrate
 
 ### 4. Start the server
 ```bash
-yarn build
 yarn start
 ```
 
