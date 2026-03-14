@@ -48,6 +48,41 @@ export class ProductStore {
     }
   }
 
+  async update(id: number, p: Partial<Product>): Promise<Product> {
+    const conn = await pool.connect();
+    try {
+      if (p.name === undefined || p.price === undefined) {
+        throw new Error("name and price are required for update.");
+      }
+      const sql =
+        "UPDATE products SET name=$1, price=$2, category=$3 WHERE id=$4 RETURNING *";
+      const result = await conn.query(sql, [
+        p.name,
+        p.price,
+        p.category || null,
+        id,
+      ]);
+      return result.rows[0];
+    } catch (err) {
+      throw new Error(`Could not update product with id ${id}. Error: ${err}`);
+    } finally {
+      conn.release();
+    }
+  }
+
+  async delete(id: number): Promise<Product> {
+    const conn = await pool.connect();
+    try {
+      const sql = "DELETE FROM products WHERE id=($1) RETURNING *";
+      const result = await conn.query(sql, [id]);
+      return result.rows[0];
+    } catch (err) {
+      throw new Error(`Could not delete product with id ${id}. Error: ${err}`);
+    } finally {
+      conn.release();
+    }
+  }
+  
   // [OPTIONAL] Top 5 most popular products by total quantity ordered
   async topFivePopular(): Promise<Product[]> {
     const conn = await pool.connect();

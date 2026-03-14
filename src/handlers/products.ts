@@ -45,6 +45,47 @@ const create = async (req: Request, res: Response): Promise<void> => {
   }
 };
 
+const update = async (req: Request, res: Response): Promise<void> => {
+  const id = parseInt(req.params.id as unknown as string);
+  if (isNaN(id)) {
+    res.status(400).json({ error: "Invalid product ID." });
+    return;
+  }
+  const { name, price } = req.body;
+  if (name === undefined && price === undefined) {
+    res.status(400).json({ error: "At least one of name or price is required for update." });
+    return;
+  }
+  try {
+    const product = await store.update(id, req.body);
+    if (!product) {
+      res.status(404).json({ error: `Product with id ${id} not found.` });
+      return;
+    }
+    res.json(product);
+  } catch (err) {
+    res.status(500).json({ error: "Could not update product." });
+  }
+};
+
+const deleteProduct = async (req: Request, res: Response): Promise<void> => {
+  const id = parseInt(req.params.id as unknown as string);
+  if (isNaN(id)) {
+    res.status(400).json({ error: "Invalid product ID." });
+    return;
+  }
+  try {
+    const product = await store.delete(id);
+    if (!product) {
+      res.status(404).json({ error: `Product with id ${id} not found.` });
+      return;
+    }
+    res.json(product);
+  } catch (err) {
+    res.status(500).json({ error: "Could not delete product." });
+  }
+};
+
 // [OPTIONAL] GET /products/popular - Top 5 most popular products
 const topFivePopular = async (req: Request, res: Response): Promise<void> => {
   try {
@@ -76,6 +117,8 @@ const productRoutes = (app: any) => {
   app.get("/products", index);
   app.get("/products/:id", show);
   app.post("/products", verifyAuthToken, create);
+  app.patch("/products/:id", verifyAuthToken, update);
+  app.delete("/products/:id", verifyAuthToken, deleteProduct);
 };
 
 export default productRoutes;

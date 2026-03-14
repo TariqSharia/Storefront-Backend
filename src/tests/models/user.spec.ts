@@ -5,16 +5,17 @@ const store = new UserStore();
 
 describe("User Model", () => {
   let createdUserId: number;
+  let createdUser2Id: number;
 
   beforeAll(async () => {
     const conn = await pool.connect();
-    await conn.query("DELETE FROM users WHERE username='testuser'");
+    await conn.query("DELETE FROM users WHERE username='testuser' OR username='testuser2'");
     conn.release();
   });
 
   afterAll(async () => {
     const conn = await pool.connect();
-    await conn.query("DELETE FROM users WHERE username='testuser'");
+    await conn.query("DELETE FROM users WHERE username='testuser' OR username='testuser2'");
     conn.release();
   });
 
@@ -28,6 +29,14 @@ describe("User Model", () => {
 
   it("should have a create method", () => {
     expect(store.create).toBeDefined();
+  });
+
+  it("should have an update method", () => {
+    expect(store.update).toBeDefined();
+  });
+
+  it("should have a delete method", () => {
+    expect(store.delete).toBeDefined();
   });
 
   it("should have an authenticate method", () => {
@@ -94,5 +103,45 @@ describe("User Model", () => {
   it("authenticate method should return null for non-existent user", async () => {
     const result = await store.authenticate("nonexistent", "password123");
     expect(result).toBeNull();
+  });
+
+  it("update method should update a user password", async () => {
+    const result = await store.update(createdUserId, {
+      password: "newpassword123",
+    });
+    expect(result).not.toBeNull();
+    expect(result.id).toEqual(createdUserId);
+  });
+
+  it("update method should persist the password change in the database", async () => {
+    const result = await store.authenticate("testuser", "newpassword123");
+    expect(result).not.toBeNull();
+    expect(result!.username).toEqual("testuser");
+  });
+
+  it("update method should invalidate the old password", async () => {
+    const result = await store.authenticate("testuser", "password123");
+    expect(result).toBeNull();
+  });
+
+  it("delete method should remove a user", async () => {
+    // Create a second user for deletion test
+    const user2Result = await store.create({
+      username: "testuser2",
+      firstname: "Test",
+      lastname: "User2",
+      password: "password123",
+    });
+    createdUser2Id = user2Result.id as number;
+
+    await store.delete(createdUser2Id);
+    const result = await store.show(createdUser2Id);
+    expect(result).toBeNull();
+  });
+
+  it("delete method should persist the deletion in the database", async () => {
+    const result = await store.index();
+    const deleted = result.find((u) => u.id === createdUser2Id);
+    expect(deleted).toBeUndefined();
   });
 });

@@ -9,13 +9,17 @@ describe("Product Model", () => {
 
   beforeAll(async () => {
     const conn = await pool.connect();
-    await conn.query("DELETE FROM products WHERE name IN ('Testing Product', 'Popular Product')");
+    await conn.query(
+      "DELETE FROM products WHERE name IN ('Testing Product', 'Popular Product', 'Product to Delete')",
+    );
     conn.release();
   });
 
   afterAll(async () => {
     const conn = await pool.connect();
-    await conn.query("DELETE FROM products WHERE name IN ('Testing Product', 'Popular Product')");
+    await conn.query(
+      "DELETE FROM products WHERE name IN ('Testing Product', 'Popular Product', 'Product to Delete')",
+    );
     conn.release();
   });
 
@@ -29,6 +33,14 @@ describe("Product Model", () => {
 
   it("should have a create method", () => {
     expect(store.create).toBeDefined();
+  });
+
+  it("should have an update method", () => {
+    expect(store.update).toBeDefined();
+  });
+
+  it("should have a delete method", () => {
+    expect(store.delete).toBeDefined();
   });
 
   it("should have a topFivePopular method", () => {
@@ -84,5 +96,43 @@ describe("Product Model", () => {
     const result = await store.topFivePopular();
     expect(Array.isArray(result)).toBeTrue();
     expect(result.length).toBeLessThanOrEqual(5);
+  });
+
+  it("update method should update a product", async () => {
+    const result = await store.update(createdProductId, {
+      name: "Updated Testing Product",
+      price: 15.99,
+      category: "Updated Category",
+    });
+    expect(result.name).toEqual("Updated Testing Product");
+    expect(parseFloat(result.price as unknown as string)).toEqual(15.99);
+    expect(result.category).toEqual("Updated Category");
+  });
+
+  it("update method should persist the changes in the database", async () => {
+    const result = await store.show(createdProductId);
+    expect(result).not.toBeNull();
+    expect(result!.name).toEqual("Updated Testing Product");
+    expect(parseFloat(result!.price as unknown as string)).toEqual(15.99);
+    expect(result!.category).toEqual("Updated Category");
+  });
+
+  it("delete method should remove a product", async () => {
+    const productToDelete = await store.create({
+      name: "Product to Delete",
+      price: 5.99,
+      category: "Delete Category",
+    });
+    secondProductId = productToDelete.id as number;
+
+    await store.delete(secondProductId);
+    const result = await store.show(secondProductId);
+    expect(result).toBeNull();
+  });
+
+  it("delete method should persist the deletion in the database", async () => {
+    const result = await store.index();
+    const deleted = result.find((p) => p.id === secondProductId);
+    expect(deleted).toBeUndefined();
   });
 });

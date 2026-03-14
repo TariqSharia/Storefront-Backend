@@ -6,13 +6,6 @@ export type Order = {
   status: string;
 };
 
-export type OrderProduct = {
-  id?: number;
-  order_id: number;
-  product_id: number;
-  quantity: number;
-};
-
 export class OrderStore {
   async index(): Promise<Order[]> {
     const conn = await pool.connect();
@@ -54,21 +47,31 @@ export class OrderStore {
     }
   }
 
-  async addProduct(
-    quantity: number,
-    order_id: number,
-    product_id: number
-  ): Promise<OrderProduct> {
+  async update(id: number, o: Partial<Order>): Promise<Order> {
     const conn = await pool.connect();
     try {
+      if ( o.status === undefined) {
+        throw new Error("status is required for update.");
+      }
       const sql =
-        "INSERT INTO order_products (quantity, order_id, product_id) VALUES ($1, $2, $3) RETURNING *";
-      const result = await conn.query(sql, [quantity, order_id, product_id]);
+        "UPDATE orders SET status=$1 WHERE id=$2 RETURNING *";
+      const result = await conn.query(sql, [o.status, id]);
       return result.rows[0];
     } catch (err) {
-      throw new Error(
-        `Could not add product ${product_id} to order ${order_id}. Error: ${err}`
-      );
+      throw new Error(`Could not update order with id ${id}. Error: ${err}`);
+    } finally {
+      conn.release();
+    }
+  }
+
+  async delete(id: number): Promise<Order> {
+    const conn = await pool.connect();
+    try {
+      const sql = "DELETE FROM orders WHERE id=($1) RETURNING *";
+      const result = await conn.query(sql, [id]);
+      return result.rows[0];
+    } catch (err) {
+      throw new Error(`Could not delete order with id ${id}. Error: ${err}`);
     } finally {
       conn.release();
     }

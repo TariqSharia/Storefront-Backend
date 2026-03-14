@@ -67,6 +67,39 @@ export class UserStore {
     }
   }
 
+  async update(id: number, u: Partial<User>): Promise<User> {
+    const conn = await pool.connect();
+    try {
+      if (u.password === undefined || u.username !== undefined || u.firstname !== undefined || u.lastname !== undefined) {
+        throw new Error("at least one field is required for update.");
+      }
+      const hash = bcrypt.hashSync(
+        u.password + BCRYPT_PASSWORD,
+        parseInt(BCRYPT_SALT_ROUNDS as string)
+      );
+      const sql ="UPDATE users SET password=$1 WHERE id=$2 RETURNING id, username, firstname, lastname";
+      const result = await conn.query(sql, [hash, id]);
+      return result.rows[0];
+    } catch (err) {
+      throw new Error(`Could not update user with id ${id}. Error: ${err}`);
+    } finally {
+      conn.release();
+    }
+  }
+  
+  async delete(id: number): Promise<User> {
+    const conn = await pool.connect();
+    try {
+      const sql = "DELETE FROM users WHERE id=($1) RETURNING *";
+      const result = await conn.query(sql, [id]);
+      return result.rows[0];
+    } catch (err) {
+      throw new Error(`Could not delete user with id ${id}. Error: ${err}`);
+    } finally {
+      conn.release();
+    }
+  }
+
   async authenticate(username: string, password: string): Promise<User | null> {
     const conn = await pool.connect();
     try {

@@ -73,20 +73,29 @@ yarn test
 | GET | `/users/:id` | ✅ Bearer Token |
 | POST | `/users` | ❌ |
 | POST | `/users/authenticate` | ❌ |
+| PATCH | `/users/:id` | ✅ Bearer Token |
+| DELETE | `/users/:id` | ✅ Bearer Token |
 
 ### Products
 | Method | Endpoint | Auth Required |
 |--------|----------|---------------|
 | GET | `/products` | ❌ |
 | GET | `/products/:id` | ❌ |
+| GET | `/products/popular` | ❌ |
+| GET | `/products/category/:category` | ❌ |
 | POST | `/products` | ✅ Bearer Token |
+| PATCH | `/products/:id` | ✅ Bearer Token |
+| DELETE | `/products/:id` | ✅ Bearer Token |
 
 ### Orders
 | Method | Endpoint | Auth Required |
 |--------|----------|---------------|
 | GET | `/orders` | ✅ Bearer Token |
 | GET | `/orders/:id` | ✅ Bearer Token |
+| GET | `/orders/completed/:user_id` | ✅ Bearer Token |
 | POST | `/orders` | ✅ Bearer Token |
+| PATCH | `/orders/:id` | ✅ Bearer Token |
+| DELETE | `/orders/:id` | ✅ Bearer Token |
 | POST | `/orders/:id/products` | ✅ Bearer Token |
 
 ## Authentication

@@ -54,6 +54,39 @@ const create = async (req: Request, res: Response): Promise<void> => {
   }
 };
 
+const update = async (req: Request, res: Response): Promise<void> => {
+  const id = parseInt(req.params.id as unknown as string);
+  if (isNaN(id)) {
+    res.status(400).json({ error: "Invalid user ID." });
+    return;
+  }
+  const { username, firstname, lastname, password } = req.body;
+  if (username === undefined && firstname === undefined && lastname === undefined && password === undefined) {
+    res.status(400).json({ error: "At least one of username, firstname, lastname or password is required for update." });
+    return;
+  }
+  try {
+    const user = await store.update(id, { username, firstname, lastname, password });
+    res.json(user);
+  } catch (err) {
+    res.status(500).json({ error: "Could not update user." });
+  }
+};
+
+const deleteUser = async (req: Request, res: Response): Promise<void> => {
+  const id = parseInt(req.params.id as unknown as string);
+  if (isNaN(id)) {
+    res.status(400).json({ error: "Invalid user ID." });
+    return;
+  }
+  try {
+    await store.delete(id);
+    res.json({ message: `User with id ${id} deleted successfully.` });
+  } catch (err) {
+    res.status(500).json({ error: "Could not delete user." });
+  }
+};
+
 const authenticate = async (req: Request, res: Response): Promise<void> => {
   const { username, password } = req.body;
   if (!username || !password) {
@@ -78,6 +111,8 @@ const userRoutes = (app: any) => {
   app.get("/users/:id", verifyAuthToken, show);
   app.post("/users", create);
   app.post("/users/authenticate", authenticate);
+  app.patch("/users/:id", verifyAuthToken, update);
+  app.delete("/users/:id", verifyAuthToken, deleteUser);
 };
 
 export default userRoutes;

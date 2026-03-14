@@ -1,14 +1,17 @@
 import { OrderStore } from "../../models/order";
+import { OrderProductStore } from "../../models/orderProduct";
 import pool from "../../database";
 import { UserStore } from "../../models/user";
 import { ProductStore } from "../../models/product";
 
 const orderStore = new OrderStore();
+const orderProductStore = new OrderProductStore();
 const productStore = new ProductStore();
 const userStore = new UserStore();
 
 describe("Order Model", () => {
   let createdOrderId: number;
+  let createdOrder2Id: number;
   let createdUserId: number;
   let createdProductId: number;
 
@@ -57,8 +60,12 @@ describe("Order Model", () => {
     expect(orderStore.create).toBeDefined();
   });
 
-  it("should have an addProduct method", () => {
-    expect(orderStore.addProduct).toBeDefined();
+  it("should have an update method", () => {
+    expect(orderStore.update).toBeDefined();
+  });
+
+  it("should have a delete method", () => {
+    expect(orderStore.delete).toBeDefined();
   });
 
   it("should have a currentOrder method", () => {
@@ -96,14 +103,27 @@ describe("Order Model", () => {
     expect(result).toBeNull();
   });
 
-  it("addProduct method should add a product to the order", async () => {
-    const result = await orderStore.addProduct(3, createdOrderId, createdProductId);
-    expect(result.order_id).toEqual(createdOrderId);
-    expect(result.product_id).toEqual(createdProductId);
-    expect(result.quantity).toEqual(3);
+  it("update method should update an order status", async () => {
+    const result = await orderStore.update(createdOrderId, {
+      status: "complete",
+    });
+    expect(result.id).toEqual(createdOrderId);
+    expect(result.status).toEqual("complete");
+  });
+
+  it("update method should persist the changes in the database", async () => {
+    const result = await orderStore.show(createdOrderId);
+    expect(result).not.toBeNull();
+    expect(result!.status).toEqual("complete");
   });
 
   it("currentOrder method should return the active order for a user", async () => {
+    // Create an active order for this test
+    const activeOrder = await orderStore.create({
+      user_id: createdUserId,
+      status: "active",
+    });
+
     const result = await orderStore.currentOrder(createdUserId);
     expect(result).not.toBeNull();
     expect(result!.user_id).toEqual(createdUserId);
@@ -115,16 +135,32 @@ describe("Order Model", () => {
     expect(result).toBeNull();
   });
 
-  it("completedOrders method should return completed orders for a user", async () => {
-    // Create a completed order first
-    await orderStore.create({ user_id: createdUserId, status: "complete" });
+  it("completed Orders method should return completed orders for a user", async () => {
+    const completedOrder = await orderStore.create({
+      user_id: createdUserId,
+      status: "complete",
+    });
+    createdOrder2Id = completedOrder.id as number;
+
     const result = await orderStore.completedOrders(createdUserId);
     expect(result.length).toBeGreaterThan(0);
     result.forEach((o) => expect(o.status).toEqual("complete"));
   });
 
-  it("completedOrders method should return empty array when no completed orders", async () => {
+  it("completed Orders method should return empty array when no completed orders", async () => {
     const result = await orderStore.completedOrders(999999);
     expect(result).toEqual([]);
+  });
+
+  it("delete method should remove an order", async () => {
+    await orderStore.delete(createdOrder2Id);
+    const result = await orderStore.show(createdOrder2Id);
+    expect(result).toBeNull();
+  });
+
+  it("delete method should persist the deletion in the database", async () => {
+    const result = await orderStore.index();
+    const deleted = result.find((o) => o.id === createdOrder2Id);
+    expect(deleted).toBeUndefined();
   });
 });

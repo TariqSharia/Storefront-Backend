@@ -1,5 +1,6 @@
 import { Request, Response } from "express";
 import { OrderStore } from "../models/order";
+import { OrderProductStore } from "../models/orderProduct";
 import verifyAuthToken from "../middleware/auth";
 import jwt from "jsonwebtoken";
 import dotenv from "dotenv";
@@ -7,8 +8,8 @@ import dotenv from "dotenv";
 dotenv.config();
 
 const store = new OrderStore();
+const orderProductStore = new OrderProductStore();
 
-// Helper to extract user id from JWT token
 const getUserIdFromToken = (req: Request): number => {
   const authHeader = req.headers.authorization as string;
   const token = authHeader.split(" ")[1];
@@ -69,10 +70,10 @@ const create = async (req: Request, res: Response): Promise<void> => {
 
 // POST /orders/:id/products - Add a product to an order
 const addProduct = async (req: Request, res: Response): Promise<void> => {
-  const orderId = parseInt(req.params.id as unknown as string);
+  const order_id = parseInt(req.params.id as unknown as string);
   const { product_id, quantity } = req.body;
 
-  if (isNaN(orderId)) {
+  if (isNaN(order_id)) {
     res.status(400).json({ error: "Invalid order ID." });
     return;
   }
@@ -81,10 +82,10 @@ const addProduct = async (req: Request, res: Response): Promise<void> => {
     return;
   }
   try {
-    const result = await store.addProduct(quantity, orderId, product_id);
+    const result = await orderProductStore.create({ quantity, order_id, product_id });
     res.json(result);
   } catch (err) {
-    res.status(500).json({ error: `Could not add product to order ${orderId}.` });
+    res.status(500).json({ error: `Could not add product to order ${order_id}.` });
   }
 };
 
